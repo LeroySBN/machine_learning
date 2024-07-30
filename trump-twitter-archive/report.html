@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>1. INTRODUCTION</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+
+
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<h2>1. INTRODUCTION</h2>
+
+<p>In this project, we analyse Donald Trump&#39;s twitter, focusing on the period when he announced his campaign till election date. We will then perform a sentimental analysis and draw insights from the data.</p>
+
+<h2>2. METHODS AND ANALYSIS</h2>
+
+<h3>2.1 Work Environment and Data Preparation</h3>
+
+<p>We are going to use the following libraries:</p>
+
+<pre><code class="r">if(!require(tidyverse)) 
+  install.packages(&quot;tidyverse&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+if(!require(ggplot2)) 
+  install.packages(&quot;ggplot2&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+if(!require(lubridate)) 
+  install.packages(&quot;lubridate&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+if(!require(tidyr)) 
+  install.packages(&quot;tidyr&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+if(!require(scales)) 
+  install.packages(&quot;scales&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+if(!require(dslabs)) 
+  install.packages(&quot;dslabs&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+if(!require(tidytext)) 
+  install.packages(&quot;tidytext&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+if(!require(textdata)) 
+  install.packages(&quot;textdata&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+if(!require(RSentiment)) 
+  install.packages(&quot;RSentiment&quot;, repos = &quot;http://cran.us.r-project.org&quot;)
+</code></pre>
+
+<pre><code>## Warning in library(package, lib.loc = lib.loc, character.only = TRUE,
+## logical.return = TRUE, : there is no package called &#39;RSentiment&#39;
+</code></pre>
+
+<pre><code>## Warning in install.packages :
+##   unable to access index for repository https://cran.rstudio.com/src/contrib:
+##   cannot open URL &#39;https://cran.rstudio.com/src/contrib/PACKAGES&#39;
+## Warning in install.packages :
+##   unable to access index for repository http://cran.us.r-project.org/src/contrib:
+##   cannot open URL &#39;http://cran.us.r-project.org/src/contrib/PACKAGES&#39;
+## Warning in install.packages :
+##   package &#39;RSentiment&#39; is not available (for R version 3.6.1)
+## Warning in install.packages :
+##   unable to access index for repository http://cran.us.r-project.org/bin/windows/contrib/3.6:
+##   cannot open URL &#39;http://cran.us.r-project.org/bin/windows/contrib/3.6/PACKAGES&#39;
+</code></pre>
+
+<p>Next we shall download and wrangle the data</p>
+
+<pre><code class="r">url &lt;- &#39;http://www.trumptwitterarchive.com/data/realdonaldtrump/%s.json&#39;
+
+trump_tweets &lt;- map(2009:2017, ~sprintf(url, .x)) %&gt;%
+  map_df(jsonlite::fromJSON, simplifyDataFrame = TRUE) %&gt;%
+  filter(!is_retweet &amp; !str_detect(text, &#39;^&quot;&#39;)) %&gt;%
+  mutate(created_at = parse_date_time(created_at, 
+                                      orders = &quot;a b! d! H!:M!:S! z!* Y!&quot;, tz=&quot;EST&quot;))
+</code></pre>
+
+<h3>2.3 Data Exploration and Visualizations</h3>
+
+<p>The data is split into 8 columns consisting of</p>
+
+<pre><code>## [1] &quot;source&quot;                  &quot;id_str&quot;                 
+## [3] &quot;text&quot;                    &quot;created_at&quot;             
+## [5] &quot;retweet_count&quot;           &quot;in_reply_to_user_id_str&quot;
+## [7] &quot;favorite_count&quot;          &quot;is_retweet&quot;
+</code></pre>
+
+<p>Where the first entry is</p>
+
+<pre><code class="r">trump_tweets[1,]
+</code></pre>
+
+<pre><code>##               source     id_str
+## 1 Twitter Web Client 6971079756
+##                                                                                                                                   text
+## 1 From Donald Trump: Wishing everyone a wonderful holiday &amp; a happy, healthy, prosperous New Year. Let’s think like champions in 2010!
+##            created_at retweet_count in_reply_to_user_id_str favorite_count
+## 1 2009-12-23 12:38:18            28                    &lt;NA&gt;             12
+##   is_retweet
+## 1      FALSE
+</code></pre>
+
+<p>Here is a view of the first few tweets</p>
+
+<pre><code class="r">trump_tweets %&gt;% select(text) %&gt;% head
+</code></pre>
+
+<pre><code>##                                                                                                                                         text
+## 1       From Donald Trump: Wishing everyone a wonderful holiday &amp; a happy, healthy, prosperous New Year. Let’s think like champions in 2010!
+## 2 Trump International Tower in Chicago ranked 6th tallest building in world by Council on Tall Buildings &amp; Urban Habitat http://bit.ly/sqvQq
+## 3                                                                             Wishing you and yours a very Happy and Bountiful Thanksgiving!
+## 4                       Donald Trump Partners with TV1 on New Reality Series Entitled, Omarosa&#39;s Ultimate Merger: http://tinyurl.com/yk5m3lc
+## 5                         --Work has begun, ahead of schedule, to build the greatest golf course in history: Trump International – Scotland.
+## 6              --From Donald Trump: &quot;Ivanka and Jared’s wedding was spectacular, and they make a beautiful couple. I’m a very proud father.&quot;
+</code></pre>
+
+<p>Source variable tells us the device that was used to compose and upload each tweet</p>
+
+<pre><code class="r">trump_tweets %&gt;% count(source) %&gt;% arrange(desc(n))
+</code></pre>
+
+<pre><code>## # A tibble: 19 x 2
+##    source                       n
+##    &lt;chr&gt;                    &lt;int&gt;
+##  1 Twitter Web Client       10718
+##  2 Twitter for Android       4652
+##  3 Twitter for iPhone        3962
+##  4 TweetDeck                  468
+##  5 TwitLonger Beta            288
+##  6 Instagram                  133
+##  7 Media Studio               114
+##  8 Facebook                   104
+##  9 Twitter Ads                 96
+## 10 Twitter for BlackBerry      78
+## 11 Mobile Web (M5)             54
+## 12 Twitter for iPad            39
+## 13 Twitlonger                  22
+## 14 Twitter QandA               10
+## 15 Vine - Make a Scene         10
+## 16 Periscope                    7
+## 17 Neatly For BlackBerry 10     4
+## 18 Twitter for Websites         1
+## 19 Twitter Mirror for iPad      1
+</code></pre>
+
+<p>And if we filter out retweets and focus on the <strong>&quot;twitter for ...&quot;</strong> entries</p>
+
+<pre><code class="r">trump_tweets %&gt;% 
+  extract(source, &quot;source&quot;, &quot;Twitter for (.*)&quot;) %&gt;%
+  count(source)
+</code></pre>
+
+<pre><code>## # A tibble: 6 x 2
+##   source         n
+##   &lt;chr&gt;      &lt;int&gt;
+## 1 Android     4652
+## 2 BlackBerry    78
+## 3 iPad          39
+## 4 iPhone      3962
+## 5 Websites       1
+## 6 &lt;NA&gt;       12029
+</code></pre>
+
+<p>Since we are interested on what happened during the campaign, we further wrangle the dataset to focus on what was tweeted between the day Trump announced his campaign and election day from an Android and iPhone</p>
+
+<p>We will use data visualization to explore the possibility that two different groups were tweeting from these devices.</p>
+
+<p>For each tweet, we will extract the hour, in the east coast (EST), it was tweeted then compute the proportion of tweets tweeted at each hour for each device.</p>
+
+<p><img src="figure/unnamed-chunk-9-1.png" alt="plot of chunk unnamed-chunk-9"></p>
+
+<p>We notice a big peak for the Android in early hours of the morning, between 6AM and 8AM. There seems to be a clear difference in these patterns. We will therefore assume that two different entities are using these two devices.</p>
+
+<p>Now we will study how their tweets differ.</p>
+
+<p>For each word we want to know if it is more likely to come from an Android tweet or an iPhone tweet using odds ratio. We will have many proportions that are 0 so we use the 0.5 correction. Given that several of these words are overall low frequency words we can impose a filter based on the total frequency</p>
+
+<pre><code class="r">tweet_words &lt;- campaign_tweets %&gt;% 
+  mutate(text = str_replace_all(text, &quot;https://t.co/[A-Za-z\\d]+|&amp;amp;&quot;, &quot;&quot;))  %&gt;%
+  unnest_tokens(word, text, token = &quot;regex&quot;, pattern = pattern) %&gt;%
+  filter(!word %in% stop_words$word &amp;
+           !str_detect(word, &quot;^\\d+$&quot;)) %&gt;%
+  mutate(word = str_replace(word, &quot;^&#39;&quot;, &quot;&quot;))
+
+android_iphone_or &lt;- tweet_words %&gt;%
+  count(word, source) %&gt;% spread(source, n, fill = 0) %&gt;%
+  mutate(or = (Android + 0.5) / (sum(Android) - Android + 0.5) / 
+           ( (iPhone + 0.5) / (sum(iPhone) - iPhone + 0.5)))
+</code></pre>
+
+<pre><code class="r">android_iphone_or %&gt;% filter(Android+iPhone &gt; 100) %&gt;% arrange(desc(or))
+</code></pre>
+
+<pre><code>## # A tibble: 30 x 4
+##    word        Android iPhone    or
+##    &lt;chr&gt;         &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
+##  1 @cnn            104     18  4.95
+##  2 bad             104     26  3.45
+##  3 crooked         157     49  2.79
+##  4 ted              85     28  2.62
+##  5 interviewed      76     25  2.62
+##  6 media            77     26  2.56
+##  7 cruz            116     46  2.19
+##  8 hillary         290    119  2.14
+##  9 win              74     30  2.14
+## 10 president        84     35  2.08
+## # ... with 20 more rows
+</code></pre>
+
+<pre><code class="r">android_iphone_or %&gt;% filter(Android+iPhone &gt; 100) %&gt;% arrange(or)
+</code></pre>
+
+<pre><code>## # A tibble: 30 x 4
+##    word                   Android iPhone      or
+##    &lt;chr&gt;                    &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;
+##  1 #makeamericagreatagain       0    296 0.00144
+##  2 #trump2016                   3    412 0.00718
+##  3 join                         1    157 0.00821
+##  4 tomorrow                    25    101 0.218  
+##  5 vote                        46     67 0.600  
+##  6 america                    114    141 0.703  
+##  7 tonight                     71     84 0.737  
+##  8 iowa                        62     65 0.831  
+##  9 poll                       117    103 0.990  
+## 10 trump                      112     92 1.06   
+## # ... with 20 more rows
+</code></pre>
+
+<p>We already see somewhat of a pattern in the types of words that are being tweeted more in one device versus the other. We are not interested in specific words but rather in the tone.</p>
+
+<p>Vaziri&#39;s assertion is that the Android tweets are more hyperbolic. So how can we check this with data? Hyperbolic is a hard sentiment to extract from words as it relies on interpreting phrases. However, words can be associated to more basic sentiment such as anger, fear, joy and surprise.</p>
+
+<p>In the next section we demonstrate basic sentiment analysis.</p>
+
+<h3>2.4 Sentiment Analysis</h3>
+
+<p>For the analysis here, we are interested in exploring the different sentiments of each tweet, so we will use the nrc lexicon:</p>
+
+</body>
+
+</html>

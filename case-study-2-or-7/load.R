@@ -1,0 +1,7 @@
+library(tidyverse)
+library(caret)
+library(broom)
+library(dslabs)
+data("mnist_27")
+if(!exists("mnist")) mnist <- read_mnist()
+class(mnist$train$images)

@@ -1,0 +1,152 @@
+---
+title: "Donald Trump's Tweet Analysis"
+author: "Leroy Buliro"
+date: "1/17/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. INTRODUCTION
+
+In this project, we analyse Donald Trump's twitter, focusing on the period when he announced his campaign till election date. We will then perform a sentimental analysis and draw insights from the data.
+
+## 2. METHODS AND ANALYSIS
+
+### 2.1 Work Environment and Data Preparation
+
+We are going to use the following libraries:
+
+```{r message=FALSE}
+if(!require(tidyverse)) 
+  install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(ggplot2)) 
+  install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+if(!require(lubridate)) 
+  install.packages("lubridate", repos = "http://cran.us.r-project.org")
+if(!require(tidyr)) 
+  install.packages("tidyr", repos = "http://cran.us.r-project.org")
+if(!require(scales)) 
+  install.packages("scales", repos = "http://cran.us.r-project.org")
+if(!require(dslabs)) 
+  install.packages("dslabs", repos = "http://cran.us.r-project.org")
+if(!require(tidytext)) 
+  install.packages("tidytext", repos = "http://cran.us.r-project.org")
+if(!require(textdata)) 
+  install.packages("textdata", repos = "http://cran.us.r-project.org")
+if(!require(RSentiment)) 
+  install.packages("RSentiment", repos = "http://cran.us.r-project.org")
+```
+
+Next we shall download and wrangle the data
+
+```{r message=FALSE, eval=FALSE}
+url <- 'http://www.trumptwitterarchive.com/data/realdonaldtrump/%s.json'
+
+trump_tweets <- map(2009:2017, ~sprintf(url, .x)) %>%
+  map_df(jsonlite::fromJSON, simplifyDataFrame = TRUE) %>%
+  filter(!is_retweet & !str_detect(text, '^"')) %>%
+  mutate(created_at = parse_date_time(created_at, 
+                                      orders = "a b! d! H!:M!:S! z!* Y!", tz="EST"))
+```
+
+### 2.3 Data Exploration and Visualizations
+
+The data is split into 8 columns consisting of
+
+```{r echo=FALSE}
+names(trump_tweets)
+```
+
+Where the first entry is
+
+```{r}
+trump_tweets[1,]
+```
+
+Here is a view of the first few tweets
+
+```{r}
+trump_tweets %>% select(text) %>% head
+```
+
+Source variable tells us the device that was used to compose and upload each tweet
+
+```{r}
+trump_tweets %>% count(source) %>% arrange(desc(n))
+```
+
+And if we filter out retweets and focus on the **"twitter for ..."** entries
+
+```{r}
+trump_tweets %>% 
+  extract(source, "source", "Twitter for (.*)") %>%
+  count(source)
+```
+
+Since we are interested on what happened during the campaign, we further wrangle the dataset to focus on what was tweeted between the day Trump announced his campaign and election day from an Android and iPhone
+
+```{r echo=FALSE}
+campaign_tweets <- trump_tweets %>% 
+  extract(source, "source", "Twitter for (.*)") %>%
+  filter(source %in% c("Android", "iPhone") &
+           created_at >= ymd("2015-06-17") & 
+           created_at < ymd("2016-11-08")) %>%
+  filter(!is_retweet) %>% arrange(created_at)
+```
+
+We will use data visualization to explore the possibility that two different groups were tweeting from these devices.
+
+For each tweet, we will extract the hour, in the east coast (EST), it was tweeted then compute the proportion of tweets tweeted at each hour for each device.
+
+```{r echo=FALSE}
+ds_theme_set()
+
+campaign_tweets %>%
+  mutate(hour = hour(with_tz(created_at, "EST"))) %>% 
+  count(source, hour) %>% group_by(source) %>%
+  mutate(percent = n / sum(n)) %>% ungroup %>%
+  ggplot(aes(hour, percent, color = source)) + 
+  geom_line() + geom_point() +
+  scale_y_continuous(labels = percent_format()) + 
+  labs(x = "Hour of day (EST)", y = "% of tweets", color = "")
+```
+
+We notice a big peak for the Android in early hours of the morning, between 6AM and 8AM. There seems to be a clear difference in these patterns. We will therefore assume that two different entities are using these two devices.
+
+Now we will study how their tweets differ.
+
+For each word we want to know if it is more likely to come from an Android tweet or an iPhone tweet using odds ratio. We will have many proportions that are 0 so we use the 0.5 correction. Given that several of these words are overall low frequency words we can impose a filter based on the total frequency
+
+```{r}
+tweet_words <- campaign_tweets %>% 
+  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", ""))  %>%
+  unnest_tokens(word, text, token = "regex", pattern = pattern) %>%
+  filter(!word %in% stop_words$word &
+           !str_detect(word, "^\\d+$")) %>%
+  mutate(word = str_replace(word, "^'", ""))
+
+android_iphone_or <- tweet_words %>%
+  count(word, source) %>% spread(source, n, fill = 0) %>%
+  mutate(or = (Android + 0.5) / (sum(Android) - Android + 0.5) / 
+           ( (iPhone + 0.5) / (sum(iPhone) - iPhone + 0.5)))
+```
+
+
+```{r}
+android_iphone_or %>% filter(Android+iPhone > 100) %>% arrange(desc(or))
+
+android_iphone_or %>% filter(Android+iPhone > 100) %>% arrange(or)
+```
+
+We already see somewhat of a pattern in the types of words that are being tweeted more in one device versus the other. We are not interested in specific words but rather in the tone.
+
+Vaziri's assertion is that the Android tweets are more hyperbolic. So how can we check this with data? Hyperbolic is a hard sentiment to extract from words as it relies on interpreting phrases. However, words can be associated to more basic sentiment such as anger, fear, joy and surprise.
+
+In the next section we demonstrate basic sentiment analysis.
+
+### 2.4 Sentiment Analysis
+
+For the analysis here, we are interested in exploring the different sentiments of each tweet, so we will use the nrc lexicon:
