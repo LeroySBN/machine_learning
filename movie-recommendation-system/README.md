@@ -1,3 +1,5 @@
+## Recommender System
+
 Recommendation systems use ratings that users have given items to make specific recommendations to users.
 
 Companies like Amazon sell many products to many customers and permit these customers to rate their products can collect massive data sets that can be used to predict what rating a given user will give a specific item. Items for which a high rating is predicted for specific users are then recommended to that user. Netflix uses recommendation systems to predict how many stars a user will give a specific movie.
